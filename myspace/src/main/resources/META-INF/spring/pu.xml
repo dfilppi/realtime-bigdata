@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:os-core="http://www.openspaces.org/schema/core" xmlns:os-events="http://www.openspaces.org/schema/events"
+	xmlns:tx="http://www.springframework.org/schema/tx" xmlns:os-remoting="http://www.openspaces.org/schema/remoting"
+	xmlns:os-sla="http://www.openspaces.org/schema/sla"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+      http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd
+      http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-2.0.xsd        
+      http://www.openspaces.org/schema/core http://www.openspaces.org/schema/core/openspaces-core.xsd
+      http://www.openspaces.org/schema/events http://www.openspaces.org/schema/events/openspaces-events.xsd
+      http://www.openspaces.org/schema/remoting http://www.openspaces.org/schema/remoting/openspaces-remoting.xsd
+		">
+		
+	<context:component-scan base-package="com.test"/>
+	
+	<bean id="propertiesConfigurer"
+		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<!-- defaults -->
+		<property name="properties">
+			<props>
+				<prop key="cassandra.driver">org.apache.cassandra.cql.jdbc.CassandraDriver</prop>
+				<prop key="cassandra.url">jdbc:cassandra://127.0.0.1:9160/test</prop>
+				<prop key="cassandra.user">default</prop>
+				<prop key="cassandra.password">default</prop>
+				<prop key="space.name">mySpace</prop>
+				<prop key="space.partitions">1</prop>
+				<prop key="space.backups">0</prop>
+			</props>
+		</property>
+	</bean>
+<!-- 	SAMPLE POJO CONFIG
+	
+	<os-core:space id="space" url="/./mySpace" schema="persistent"
+		external-data-source="cassandraEDS" mirror="true">
+		<os-core:properties>
+			<props>
+				<prop key="space-config.engine.cache_policy">1</prop>
+				<prop key="space-config.external-data-source.usage">read-only</prop>
+			</props>
+		</os-core:properties>
+	</os-core:space>
+	
+	<os-core:giga-space id="gigaSpace" space="space"/>
+-->
+	<!-- CASSANDRA EDS -->
+<!--   	<bean id="fieldSerializer" class="org.openspaces.eds.support.JsonFieldSerializer" />
+	<bean id="cassandraEDS" class="org.openspaces.cassandraeds.CassandraEDS">
+		<constructor-arg ref="boneCP" />
+		<constructor-arg ref="fieldSerializer" />
+	</bean>
+-->
+<!-- SAMPLE SPACEDOCUMENT CONFIG -->
+
+	<bean id="space" class="org.openspaces.core.space.UrlSpaceFactoryBean">
+		<property name="url" value="/./mySpace"/>
+		<property name="mirror" value="true"/>
+		<property name="schema" value="persistent"/>
+		<property name="externalDataSource"><ref bean="cassandraEDS"/></property>
+		<property name="spaceTypes"><ref bean="deffactory"/></property>
+		<property name="properties">
+			<props>
+				<prop key="space-config.engine.cache_policy">1</prop>
+				<prop key="space-config.external-data-source.usage">read-only</prop>
+			</props>
+		</property>
+	</bean>
+	
+	<bean id="fieldSerializer" class="org.openspaces.eds.support.JsonFieldSerializer" />
+	<bean id="cassandraEDS" class="org.openspaces.cassandraeds.CassandraEDS">
+		<constructor-arg ref="boneCP" />
+		<constructor-arg ref="fieldSerializer" />
+		<constructor-arg ref="deffactory"/>
+	</bean>
+	
+	<!-- annotation driven document definition -->
+   <bean id="defmaker" class="org.openspaces.eds.support.SpaceTypeMaker"/>
+   <bean id="deffactory" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+      <property name="targetObject"><ref local="defmaker"/></property>
+      <property name="targetMethod"><value>getSpaceTypes</value></property>
+   </bean>
+	
+	
+<!-- END SPACEDOCUMENT CONFIG -->
+	
+	<!-- CONNECTION POOL -->
+
+
+ 	<bean id="boneCP" class="com.jolbox.bonecp.BoneCPDataSource"
+		destroy-method="close">
+		<property name="driverClass" value="${cassandra.driver}" />
+		<property name="jdbcUrl" value="${cassandra.url}" />
+		<property name="username" value="${cassandra.user}" />
+		<property name="password" value="${cassandra.password}" />
+		<property name="idleConnectionTestPeriod" value="60" />
+		<property name="idleMaxAge" value="240" />
+		<property name="maxConnectionsPerPartition" value="20" />
+		<property name="minConnectionsPerPartition" value="10" />
+		<property name="partitionCount" value="3" />
+		<property name="acquireIncrement" value="5" />
+		<property name="statementsCacheSize" value="100" />
+		<property name="releaseHelperThreads" value="3" />
+	</bean>
+
+
+
+</beans>

@@ -1,0 +1,14 @@
+create keyspace test;
+use test;
+
+create column family com_test_MyData with
+  comparator = UTF8Type and
+  column_metadata =
+  [
+    {column_name: first, validation_class: UTF8Type},
+    {column_name: last, validation_class: UTF8Type},
+    {column_name: id, validation_class: UTF8Type, index_type: KEYS}
+    {column_name: age, validation_class: UTF8Type, index_type: KEYS}
+  ];
+  
+  

@@ -1,0 +1,17 @@
+package org.openspaces.document.annotations;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+@Target(ElementType.FIELD)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface DocumentIndex {
+	enum IndexType{
+		NONE,
+		BASIC,
+		EXTENDED
+	}
+	IndexType indexType() default IndexType.BASIC;
+}

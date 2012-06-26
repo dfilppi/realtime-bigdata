@@ -1,6 +1,17 @@
+*.metadata
+
+misc/
+target/
+
+# eclipse
+.classpath
+.settings/
+.project
+
 *.class
 
 # Package Files #
 *.jar
 *.war
 *.ear
+
