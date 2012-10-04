@@ -2,6 +2,7 @@
 
 misc/
 target/
+storm-test-topology/
 
 # eclipse
 .classpath
