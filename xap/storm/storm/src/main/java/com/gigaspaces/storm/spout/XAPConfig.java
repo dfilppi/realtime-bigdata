@@ -18,8 +18,7 @@ public class XAPConfig implements Serializable{
 	
 	public XAPConfig(){}
 	
-	public XAPConfig(XAPTupleStream stream, String url, String streamName, int batchSize){
-		if(stream==null)throw new IllegalArgumentException("null stream supplied");
+	public XAPConfig(String url, String streamName, int batchSize){
 		this.batchSize=batchSize;
 		this.url=url;
 		this.streamName=streamName;
