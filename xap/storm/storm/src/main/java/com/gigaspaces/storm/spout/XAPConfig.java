@@ -2,10 +2,8 @@ package com.gigaspaces.storm.spout;
 
 import java.io.Serializable;
 
-import com.gigaspaces.streaming.client.XAPTupleStream;
-
 /**
- * Configuration class for @see com.gigaspaces.storm.spout.XAPTridentSpout.
+ * Configuration class for {@link com.gigaspaces.storm.spout.XAPTridentSpout}.
  * 
  * @author DeWayne
  *
