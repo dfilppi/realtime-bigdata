@@ -14,47 +14,30 @@
 * limitations under the License.
 *******************************************************************************/
 
+
 service {
 
-	name "zookeeper"
-	type "DATABASE"
-	icon "zookeeper-small.jpg"
-	numInstances 3 
-	maxAllowedInstances 3       //currently only 1 instance supported
+	name "storm-supervisor"
+	type "APP_SERVER"
+	icon "storm.png"
+	elastic true
+	numInstances 4
 	minAllowedInstances 1
+	maxAllowedInstances 100
+
+
+    compute {
+        template "SMALL_LINUX"
+    }
 
 	lifecycle{
-		install "zookeeper_install.groovy"
-		start "zookeeper_start.groovy"
-		stop "zookeeper_stop.groovy"
-		locator {
-		    NO_PROCESS_LOCATORS
-		}
-		monitors{
-			def dir=context.serviceDirectory
-			def metrics=[]
-			def process="${context.serviceDirectory}/stat.sh 2181".execute()
-			process.in.eachLine{line-> 
-				metrics.add line
-			}
-			[       "Packets Received":metrics[0],
-				"Packets Sent":metrics[1],
-				"Outstanding Requests":metrics[2]
-			]
-		}
-
+		init "storm_install.groovy"
+		start "storm_start.groovy"
+		preStop "storm_stop.groovy"
 	}
 	plugins([
-		plugin {
-			name "portLiveness"
-			className "org.cloudifysource.usm.liveness.PortLivenessDetector"
-			config ([
-						"Port" : [2181],
-						"TimeoutInSeconds" : 60,
-						"Host" : "127.0.0.1"
-					])
-		}
 	])
+
 
 	userInterface {
 		metricGroups = ([

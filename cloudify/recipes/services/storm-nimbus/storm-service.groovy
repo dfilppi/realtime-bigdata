@@ -1,5 +1,5 @@
 /*******************************************************************************
-* Copyright (c) 2011 GigaSpaces Technologies Ltd. All rights reserved
+* Copyright (c) 2012 GigaSpaces Technologies Ltd. All rights reserved
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -14,47 +14,54 @@
 * limitations under the License.
 *******************************************************************************/
 
+
 service {
 
-	name "zookeeper"
-	type "DATABASE"
-	icon "zookeeper-small.jpg"
-	numInstances 3 
-	maxAllowedInstances 3       //currently only 1 instance supported
+	name "storm-nimbus"
+	type "APP_SERVER"
+	icon "storm.png"
+	elastic false
+	numInstances 1
 	minAllowedInstances 1
+	maxAllowedInstances 1
+
+    compute {
+        template "SMALL_LINUX"
+    }
 
 	lifecycle{
-		install "zookeeper_install.groovy"
-		start "zookeeper_start.groovy"
-		stop "zookeeper_stop.groovy"
-		locator {
-		    NO_PROCESS_LOCATORS
-		}
-		monitors{
-			def dir=context.serviceDirectory
-			def metrics=[]
-			def process="${context.serviceDirectory}/stat.sh 2181".execute()
-			process.in.eachLine{line-> 
-				metrics.add line
-			}
-			[       "Packets Received":metrics[0],
-				"Packets Sent":metrics[1],
-				"Outstanding Requests":metrics[2]
-			]
-		}
-
+		init "storm_install.groovy"
+		start "storm_start.groovy"
+		preStop "storm_stop.groovy"
 	}
 	plugins([
 		plugin {
 			name "portLiveness"
 			className "org.cloudifysource.usm.liveness.PortLivenessDetector"
 			config ([
-						"Port" : [2181],
+						"Port" : [6627],
 						"TimeoutInSeconds" : 60,
 						"Host" : "127.0.0.1"
 					])
+		},
+		plugin {
+			name "storm-nimbus"
+			className "org.cloudifysource.storm.plugins.StormNimbusPlugin"
+			config([
+				"Cluster Uptime Secs":"uptime_secs",
+				"Topology Count":"topology_count",
+				"Executor Count":"executor_count",
+				"Task Count":"task_count",
+				"Worker Count":"worker_count"
+			])
 		}
+
 	])
+
+	customCommands ([
+		"wordcount-start": "commands/wordcount-start.sh"
+	])
+
 
 	userInterface {
 		metricGroups = ([
@@ -63,9 +70,11 @@ service {
 				name "server"
 
 				metrics([
-					"Outstanding Requests",
-					"Packets Received",
-					"Packets Sent",
+				"Cluster Uptime Secs",
+				"Topology Count",
+				"Executor Count",
+				"Task Count",
+				"Worker Count"
 				])
 			},
 		]
@@ -73,28 +82,46 @@ service {
 
 		widgetGroups = ([
 			widgetGroup {
-				name "Outstanding Requests"
+				name "Cluster Uptime Secs"
 				widgets ([
 					barLineChart{
-						metric "OutStanding Requests"
+						metric "Cluster Uptime Secs"
 						axisYUnit Unit.REGULAR
 					}
 				])
 			},
 			widgetGroup {
-				name "Packets Received"
+				name "Topology Count"
 				widgets ([
 					barLineChart{
-						metric "Packets Received"
+						metric "Topology Count"
 						axisYUnit Unit.REGULAR
 					}
 				])
 			},
 			widgetGroup {
-				name "Packets Sent"
+				name "Executor Count"
 				widgets ([
 					barLineChart{
-						metric "Packets Sent"
+						metric "Executor Count"
+						axisYUnit Unit.REGULAR
+					}
+				])
+			},
+			widgetGroup {
+				name "Task Count"
+				widgets ([
+					barLineChart{
+						metric "Task Count"
+						axisYUnit Unit.REGULAR
+					}
+				])
+			},
+			widgetGroup {
+				name "Worker Count"
+				widgets ([
+					barLineChart{
+						metric "Worker Count"
 						axisYUnit Unit.REGULAR
 					}
 				])

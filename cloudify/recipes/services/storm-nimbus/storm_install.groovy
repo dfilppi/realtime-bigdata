@@ -13,14 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 *******************************************************************************/
+import static Shell.*;
 import java.util.concurrent.TimeUnit
 import groovy.text.SimpleTemplateEngine
 import groovy.util.ConfigSlurper;
+import java.net.InetAddress;
 import org.cloudifysource.dsl.context.ServiceContextFactory
 
 
-def config = new ConfigSlurper().parse(new File("zookeeper-service.properties").toURL())
-def context=ServiceContextFactory.serviceContext
+context=ServiceContextFactory.serviceContext
+config = new ConfigSlurper().parse(new File("storm-service.properties").toURL())
+
 def service = null
 
 while (service == null)
@@ -28,58 +31,43 @@ while (service == null)
    println "Locating zookeeper service...";
    service = context.waitForService("zookeeper", 120, TimeUnit.SECONDS)
 }
-def zkInstances = null;
+def zooks = null;
 def rowCount=0;
-while(zkInstances==null)
+while(zooks==null)
 {
    println "Locating zookeeper service instances. Expecting " + service.getNumberOfPlannedInstances();
-   zkInstances = service.waitForInstances(service.getNumberOfPlannedInstances(), 120, TimeUnit.SECONDS )
-}
-def ips=[]
-
-zkInstances.eachWithIndex{ instance,i ->
-		ips.add(instance.hostAddress)
+   zooks = service.waitForInstances(service.getNumberOfPlannedInstances(), 120, TimeUnit.SECONDS )
 }
 
-// The following sort is needed so every node has same id->host mapping
-ips.sort()
-def myid=0
-for(i in 1..ips.size()){
-	if(ips.get(i-1)==InetAddress.localHost.hostAddress){
-		myid=i;break;
-	}
-}
+println "Found ${zooks.length} zookeeper nodes"
 
-def binding=["hosts":ips]
-def zoo = new File('templates/zoo.cfg')
+def nimbus = InetAddress.localHost.hostAddress
+
+def binding=["zooks":zooks,"nimbus":nimbus]
+def yaml = new File('templates/storm.yaml')
 engine = new SimpleTemplateEngine()
-template = engine.createTemplate(zoo).make(binding)
+template = engine.createTemplate(yaml).make(binding)
+
+sh "chmod +x initnode.sh"
+sh "./initnode.sh"
 
 new AntBuilder().sequential {
 	mkdir(dir:"${config.installDir}")
-	mkdir(dir:"/tmp/zookeeper")
 	get(src:config.downloadPath, dest:"${config.installDir}/${config.zipName}", skipexisting:true)
-	untar(src:"${config.installDir}/${config.zipName}", dest:config.installDir, overwrite:true, compression:"gzip")
+	unzip(src:"${config.installDir}/${config.zipName}", dest:config.installDir, overwrite:true)
 	//dos2unix on the linux script files
 	fixcrlf(srcDir:"${config.installDir}/${config.name}/bin", eol:"lf", eof:"remove", excludes:"*.bat *.jar")
 	delete(file:"${config.installDir}/${config.zipName}")
 
-   //use default config
-	move(file:"${config.installDir}/${config.name}/conf/zoo_sample.cfg", tofile:"${config.installDir}/${config.name}/conf/zoo.cfg");
-
    //templates start scripts
-	move(file:"templates/zkServer.cmd", todir:"${config.installDir}/${config.name}/bin")
-	move(file:"templates/zkServer.sh", todir:"${config.installDir}/${config.name}/bin")
+	chmod(file:"${config.installDir}/${config.name}/bin/storm", perm:'ugo+rx')
 	chmod(dir:"${config.installDir}/${config.name}/bin", perm:'ugo+rx', includes:"*.sh")
-	chmod(dir:"${context.serviceDirectory}", perm:"ugo+rx", includes:"*.sh", verbose: true)
-	delete(file:"${config.installDir}/${config.name}/conf/zoo.cfg")
-}
-new File("${config.installDir}/${config.name}/conf/zoo.cfg").withWriter{ out->
-out.write(template.toString())
+	chmod(dir:"commands", perm:'ugo+rx', includes:"*.sh")
+	delete(file:"${config.installDir}/${config.name}/conf/storm.yaml")
 }
 
-//create myid file
-new File("/tmp/zookeeper/myid").createNewFile()
-new File("/tmp/zookeeper/myid").withWriter{ out->
-out.write(myid.toString())
+new File("${config.installDir}/${config.name}/conf/storm.yaml").withWriter{ out->
+  out.write(template.toString())
 }
+
+

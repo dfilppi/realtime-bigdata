@@ -3,6 +3,7 @@
 misc/
 target/
 storm-test-topology/
+*.old/
 
 # eclipse
 .classpath

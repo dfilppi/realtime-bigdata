@@ -13,13 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 *******************************************************************************/
-config = new ConfigSlurper().parse(new File("zookeeper.properties").toURL())
+def config = new ConfigSlurper().parse(new File("zookeeper-service.properties").toURL())
+
 
 new AntBuilder().sequential {
 	exec(executable:"${config.script}.sh", osfamily:"unix") {
-		//env(key:"ACTIVEMQ_OPTS", value:"-Dcom.sun.management.jmxremote.port=11099 -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false")
+		arg(value:"start-foreground")
 	}
 	exec(executable:"${config.script}.cmd", osfamily:"windows"){
-		//env(key:"ACTIVEMQ_OPTS", value:"-Dcom.sun.management.jmxremote.port=11099 -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false")
+		arg(value:"start-foreground")
 	}
 }

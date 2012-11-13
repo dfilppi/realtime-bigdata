@@ -13,20 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 *******************************************************************************/
+def config = new ConfigSlurper().parse(new File("zookeeper-service.properties").toURL())
 
-//////////////////////
-/// NOT IMPLEMENTED
-//////////////////////
-
-
-
-config = new ConfigSlurper().parse(new File("activemq.properties").toURL())
 
 new AntBuilder().sequential {
-	//exec(executable:config.script, osfamily:"unix") {
-	//	arg value:"stop"
-	//}
-	//exec(executable:"${config.script}.bat", osfamily:"windows"){
-//		arg value: "stop"
-//	}
+	exec(executable:"${config.script}.sh", osfamily:"unix") {
+		arg(value:"stop")
+	}
+	exec(executable:"${config.script}.cmd", osfamily:"windows"){
+		arg(value:"stop")
+	}
 }
